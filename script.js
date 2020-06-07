@@ -10,7 +10,7 @@ function flip(cup) {
 
 function generateCup(id, state = 'up') {
   const el = document.createElement('div');
-  el.classList.add('col', 'invisible');
+  el.classList.add('invisible', 'cup-holder');
   el.innerHTML = `<svg
   xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -19,8 +19,8 @@ function generateCup(id, state = 'up') {
   id="${id}"
   x="0px"
   y="0px"
-  width="100"
-  height="100"
+  width="100px"
+  height="100px"
   viewBox="0 0 512 512"
   xml:space="preserve"
   >
@@ -66,9 +66,12 @@ function generateCup(id, state = 'up') {
   return el;
 }
 
-let cups = Array(10).fill('up').map((d, i) => generateCup(`cup${i}`, d));
+const cupSlider = document.getElementById('cupSlider');
+let cups = Array(+cupSlider.max).fill('up').map((d, i) => generateCup(`cup${i}`, d));
 
+const cupSliderLabel = document.getElementById('cupSliderLabel');
 function showUpTo(n) {
+  cupSliderLabel.textContent = `Number of Cups: ${cupSlider.value}`;
   for (let i = 0; i < n; i++) {
     cups[i].classList.remove('invisible');
     cups[i].classList.add('visible');
@@ -80,8 +83,6 @@ function showUpTo(n) {
   }
 }
 
-
-const cupSlider = document.getElementById('cupSlider');
 showUpTo(cupSlider.value);
 cupSlider.addEventListener('input', () => {
   showUpTo(cupSlider.value);
