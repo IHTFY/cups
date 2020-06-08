@@ -10,7 +10,7 @@ function flip(cup) {
 
 function generateCup(id, state = 'up') {
   const el = document.createElement('div');
-  el.classList.add('invisible', 'cup-holder');
+  el.classList.add('d-none', 'cup-holder');
   el.innerHTML = `<svg
   xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -73,13 +73,13 @@ const cupSliderLabel = document.getElementById('cupSliderLabel');
 function showUpTo(n) {
   cupSliderLabel.textContent = `Number of Cups: ${cupSlider.value}`;
   for (let i = 0; i < n; i++) {
-    cups[i].classList.remove('invisible');
-    cups[i].classList.add('visible');
+    cups[i].classList.remove('d-none');
+    cups[i].classList.add('d-inline-block');
   }
   // const n_0 = playArea.childElementCount;
   for (let i = n; i < cups.length; i++) {
-    cups[i].classList.remove('visible');
-    cups[i].classList.add('invisible');
+    cups[i].classList.remove('d-inline-block');
+    cups[i].classList.add('d-none');
   }
 }
 
