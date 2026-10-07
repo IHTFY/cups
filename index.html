@@ -3,33 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>The Three Cups: a puzzle that's easy until it's your turn</title>
+    <meta
+      name="description"
+      content="Flip two cups at a time and turn them all upside down. Watch it done, try it yourself, then learn why parity makes it impossible."
+    />
+    <link rel="icon" href="cup.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="style.css" />
     <script defer src="script.js"></script>
-    <script
-      defer
-      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <!-- <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-      crossorigin="anonymous"
-    ></script> -->
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
-      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
-      crossorigin="anonymous"
-    />
-    <script
-      defer
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
-      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
-      crossorigin="anonymous"
-    ></script>
 
     <!-- Google Auto Ads -->
     <script
@@ -39,53 +20,155 @@
     ></script>
   </head>
   <body>
-    <div class="container">
-      <h1>
-        Cup Flip<a href="https://github.com/IHTFY/cups">
-          <svg id="gh_logo" height="32" width="32">
-            <path
-              d="M16 0C7.2 0 0 7.2 0 16c0 7.1 4.6 13 11 15 .8 .14 1.1-.34 1.1-.76 0-.38-.02-1.6-.02-3-4 .74-5.1-.98-5.4-1.9-.18-.46-.96-1.9-1.6-2.3-.56-.3-1.4-1-.02-1.1 1.3-.02 2.2 1.2 2.5 1.6 1.4 2.4 3.7 1.7 4.7 1.3 .14-1 .56-1.7 1-2.1-3.6-.4-7.3-1.8-7.3-7.9 0-1.7 .62-3.2 1.6-4.3-.16-.4-.72-2 .16-4.2 0 0 1.3-.42 4.4 1.6 1.3-.36 2.6-.54 4-.54 1.4 0 2.7 .18 4 .54 3.1-2.1 4.4-1.6 4.4-1.6 .88 2.2 .32 3.8 .16 4.2 1 1.1 1.6 2.5 1.6 4.3 0 6.1-3.7 7.5-7.3 7.9 .58 .5 1.1 1.5 1.1 3 0 2.1-.02 3.9-.02 4.4 0 .42 .3 .92 1.1 .76A16 16 0 0 0 32 16c0-8.8-7.2-16-16-16z"
-            ></path>
-          </svg>
-        </a>
-      </h1>
-    </div>
-    <div class="container">
-      <div class="container" id="controlPanel">
-        <div class="row">
-          <div class="col-3">
-            <button
-              id="randomButton"
-              type="button"
-              class="btn btn-outline-primary"
-            >
-              Random
-            </button>
-            <button
-              id="resetButton"
-              type="button"
-              class="btn btn-outline-danger"
-            >
-              Reset
-            </button>
+    <header class="site-header">
+      <div>
+        <h1>The Three Cups</h1>
+        <p class="tagline">A puzzle that looks easy until it's your turn.</p>
+      </div>
+      <a class="gh-link" href="https://github.com/IHTFY/cups" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path
+            d="M16 0C7.2 0 0 7.2 0 16c0 7.1 4.6 13 11 15 .8 .14 1.1-.34 1.1-.76 0-.38-.02-1.6-.02-3-4 .74-5.1-.98-5.4-1.9-.18-.46-.96-1.9-1.6-2.3-.56-.3-1.4-1-.02-1.1 1.3-.02 2.2 1.2 2.5 1.6 1.4 2.4 3.7 1.7 4.7 1.3 .14-1 .56-1.7 1-2.1-3.6-.4-7.3-1.8-7.3-7.9 0-1.7 .62-3.2 1.6-4.3-.16-.4-.72-2 .16-4.2 0 0 1.3-.42 4.4 1.6 1.3-.36 2.6-.54 4-.54 1.4 0 2.7 .18 4 .54 3.1-2.1 4.4-1.6 4.4-1.6 .88 2.2 .32 3.8 .16 4.2 1 1.1 1.6 2.5 1.6 4.3 0 6.1-3.7 7.5-7.3 7.9 .58 .5 1.1 1.5 1.1 3 0 2.1-.02 3.9-.02 4.4 0 .42 .3 .92 1.1 .76A16 16 0 0 0 32 16c0-8.8-7.2-16-16-16z"
+          ></path>
+        </svg>
+      </a>
+    </header>
+
+    <main>
+      <section class="card stage" aria-labelledby="trick-title">
+        <h2 id="trick-title">The trick</h2>
+        <p class="rules">
+          Every move flips exactly <strong>two</strong> cups. The goal: turn all three cups
+          <strong>mouth down</strong>.
+        </p>
+        <div class="cups cups-stage" id="trickCups"></div>
+        <p class="caption" id="trickCaption" aria-live="polite"></p>
+        <p class="moves" id="trickMoves"></p>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="yourTurnButton" hidden>Your turn</button>
+          <button type="button" class="btn" id="startOverButton" hidden>Start over</button>
+          <button type="button" class="btn" id="replayButton" hidden>Watch me again</button>
+          <button type="button" class="btn btn-primary" id="secretButton" hidden>Show me the secret</button>
+        </div>
+      </section>
+
+      <details class="card secret" id="secret">
+        <summary><h2>The secret <span class="spoiler">(spoilers)</span></h2></summary>
+
+        <p>Count the cups that are mouth up.</p>
+        <dl class="compare">
+          <div>
+            <dt>My start</dt>
+            <dd><span class="cups cups-mini" data-cups="UDU"></span> 2 up, <b class="even">even</b></dd>
           </div>
-          <div class="col">
-            <label id="cupSliderLabel"></label>
-            <input
-              type="range"
-              class="form-control-range"
-              id="cupSlider"
-              min="1"
-              max="50"
-              step="1"
-              value="3"
-            />
+          <div>
+            <dt>Your start</dt>
+            <dd><span class="cups cups-mini" data-cups="DUD"></span> 1 up, <b class="odd">odd</b></dd>
+          </div>
+          <div>
+            <dt>Goal</dt>
+            <dd><span class="cups cups-mini" data-cups="DDD"></span> 0 up, <b class="even">even</b></dd>
+          </div>
+        </dl>
+
+        <p>A move flips two cups, so there are only three kinds of move:</p>
+        <ul class="move-kinds">
+          <li>
+            <span class="cups cups-mini" data-cups="UU"></span> →
+            <span class="cups cups-mini" data-cups="DD"></span> <span>−2 up</span>
+          </li>
+          <li>
+            <span class="cups cups-mini" data-cups="DD"></span> →
+            <span class="cups cups-mini" data-cups="UU"></span> <span>+2 up</span>
+          </li>
+          <li>
+            <span class="cups cups-mini" data-cups="UD"></span> →
+            <span class="cups cups-mini" data-cups="DU"></span> <span>±0 up</span>
+          </li>
+        </ul>
+
+        <p>
+          The number of mouth-up cups can rise and fall, but it can never switch between odd and even.
+          A property that no move can change is called an <strong>invariant</strong>. My cups started
+          with an even count, the same as the goal. Yours started odd, so no sequence of moves, however
+          long, reaches zero.
+        </p>
+        <p>
+          <strong>The sneaky part.</strong> When I set the cups up for you, I flipped only the middle
+          one. A single flip is the one move the rules forbid, and it's exactly what turns even into
+          odd. Doing this trick in person, turn the middle cup over casually while you "put them back
+          the way they were."
+        </p>
+        <p>
+          <strong>In binary.</strong> Write mouth down as 0 and mouth up as 1. A move XORs two cups
+          with 1, which XORs the XOR of all the cups with 1 ⊕ 1 = 0, leaving it unchanged. Mine:
+          1 ⊕ 0 ⊕ 1 = 0. Yours: 0 ⊕ 1 ⊕ 0 = 1. The goal: 0 ⊕ 0 ⊕ 0 = 0.
+        </p>
+        <p>
+          <strong>It works the other way too.</strong> With any number of cups, if an even number are
+          mouth up you can always finish: pair them off and flip each pair. So parity is the whole
+          story. Try it below.
+        </p>
+      </details>
+
+      <section class="card sandbox" aria-labelledby="sandbox-title">
+        <h2 id="sandbox-title">Try any number of cups</h2>
+        <p>Tap two cups to flip them.</p>
+        <div class="controls">
+          <label class="slider">
+            <span>Cups: <output id="cupCount" for="cupSlider"></output></span>
+            <input type="range" id="cupSlider" min="2" max="50" step="1" value="7" />
+          </label>
+          <div class="actions">
+            <button type="button" class="btn" id="shuffleButton">Shuffle</button>
+            <button type="button" class="btn" id="allUpButton">All up</button>
+            <button type="button" class="btn btn-primary" id="solveButton">Solve</button>
           </div>
         </div>
-      </div>
-      <div class="container">
-        <div id="playArea" class="text-center"></div>
-      </div>
-    </div>
+        <div class="cups cups-sandbox" id="sandboxCups"></div>
+        <p class="stats" id="sandboxStats"></p>
+        <p class="verdict" id="sandboxVerdict" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a href="https://github.com/IHTFY/cups">Source on GitHub</a>
+    </footer>
+
+    <template id="cupTemplate">
+      <span class="cup-hop">
+        <svg class="cup-art" viewBox="0 0 512 512" aria-hidden="true">
+          <path
+            fill="#ff6465"
+            d="M48.886,33.212l68.345,447.384c2.76,18.063,18.294,31.406,36.568,31.406h204.406c18.273,0,33.808-13.342,36.568-31.406l68.345-447.384H48.886z"
+          />
+          <polygon fill="#171d26" opacity="0.1" points="58.334,95.065 453.668,95.065 463.117,33.21 48.886,33.21" />
+          <path
+            fill="#f2e9dc"
+            d="M469.459,0H42.543C24.201,0,9.333,14.868,9.333,33.212s14.868,33.21,33.21,33.21h426.915c18.342,0,33.21-14.868,33.21-33.21S487.801,0,469.459,0z"
+          />
+          <g fill="#d2555a">
+            <path
+              d="M411.402,123.17H100.601c-5.16,0-9.34-4.181-9.34-9.34c0-5.16,4.181-9.34,9.34-9.34H411.4c5.16,0,9.34,4.181,9.34,9.34C420.741,118.989,416.56,123.17,411.402,123.17z"
+            />
+            <path
+              d="M387.177,164.784H124.825c-5.16,0-9.34-4.181-9.34-9.34c0-5.16,4.181-9.34,9.34-9.34h262.352c5.16,0,9.34,4.181,9.34,9.34C396.517,160.603,392.336,164.784,387.177,164.784z"
+            />
+            <path
+              d="M360.449,427.3H151.555c-5.16,0-9.34-4.181-9.34-9.34c0-5.16,4.181-9.34,9.34-9.34h208.893c5.16,0,9.34,4.181,9.34,9.34C369.789,423.119,365.607,427.3,360.449,427.3z"
+            />
+            <path
+              d="M344.165,468.913H167.836c-5.16,0-9.34-4.181-9.34-9.34s4.181-9.34,9.34-9.34h176.329c5.16,0,9.34,4.181,9.34,9.34S349.325,468.913,344.165,468.913z"
+            />
+          </g>
+          <path
+            class="shadow"
+            fill="#171d26"
+            opacity="0.2"
+            d="M191.953,480.596L128.682,66.422h-11.416c-18.342,0-33.21-14.868-33.21-33.21C84.055,14.868,98.923,0,117.265,0H42.543C24.201,0,9.333,14.868,9.333,33.21s14.868,33.21,33.21,33.21h11.416l63.272,414.174c2.76,18.063,18.294,31.406,36.568,31.406h74.722C210.247,512,194.712,498.658,191.953,480.596z"
+          />
+        </svg>
+      </span>
+    </template>
   </body>
 </html>

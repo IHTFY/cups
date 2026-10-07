@@ -1,23 +1,380 @@
-.up {
-  transform: rotate(0deg);
-  transition: transform 300ms ease-in-out;
-}
-.up .shadow {
-  transform: translate(0) scale(1);
-  transition: transform 0ms 150ms;
+:root {
+  --bg: #f8f4ee;
+  --surface: #ffffff;
+  --text: #1f2430;
+  --muted: #5b6372;
+  --border: #e6ddd0;
+  --accent: #2f6fde;
+  --accent-soft: rgba(47, 111, 222, 0.14);
+  --even: #1f8a4c;
+  --odd: #c2410c;
+  --flip: 500ms;
+  color-scheme: light dark;
 }
 
-.down {
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161b;
+    --surface: #1d2027;
+    --text: #e9ecf1;
+    --muted: #a3abb8;
+    --border: #2d323c;
+    --accent: #7aa7ff;
+    --accent-soft: rgba(122, 167, 255, 0.18);
+    --even: #4ade80;
+    --odd: #fb923c;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --flip: 0ms;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 46rem;
+  padding: 1.5rem 1rem 2rem;
+  background: var(--bg);
+  color: var(--text);
+  font: 1rem/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1,
+h2 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 6vw, 2.4rem);
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Header and footer */
+
+.site-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.tagline {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.gh-link {
+  flex: none;
+  color: var(--text);
+}
+
+.gh-link svg {
+  display: block;
+  width: 32px;
+  height: 32px;
+  fill: currentColor;
+}
+
+.site-footer {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Cards */
+
+.card {
+  margin-bottom: 1.25rem;
+  padding: clamp(1rem, 4vw, 1.75rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.card > p {
+  margin: 0.75rem 0 0;
+}
+
+.rules {
+  color: var(--muted);
+}
+
+/* Buttons */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.1rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:not(:disabled):hover {
+  background: var(--accent-soft);
+}
+
+.btn-primary,
+.btn-primary:not(:disabled):hover {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn:focus-visible,
+.cup:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Cups */
+
+.cups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  --size: 64px;
+}
+
+.cup {
+  position: relative;
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  padding: 0;
+  border: 0;
+  border-radius: 18%;
+  background: transparent;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.cup {
+  cursor: pointer;
+  transition: translate 150ms ease-out, background-color 150ms ease-out;
+}
+
+button.cup:hover {
+  background: var(--accent-soft);
+}
+
+.cup[aria-pressed="true"] {
+  translate: 0 -10%;
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.cup-hop,
+.cup-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cup-art {
+  padding: 8%;
+  transition: transform var(--flip) ease-in-out;
+}
+
+/* The shadow stays on the cup's left side, so it swaps sides halfway through the flip. */
+.cup-art .shadow {
+  transition: transform 0ms calc(var(--flip) / 2);
+}
+
+.cup[data-facing="down"] .cup-art {
   transform: rotate(180deg);
-  transition: transform 300ms ease-in-out;
-}
-.down .shadow {
-  transform: translate(100%, 0) scale(-1, 1);
-  transition: transform 0ms 150ms;
 }
 
-div.cup-holder {
-  width: 100;
-  height: 100;
-  margin: 10px 0px;
+.cup[data-facing="down"] .shadow {
+  transform: translate(100%, 0) scale(-1, 1);
+}
+
+.cups-stage {
+  gap: clamp(0.5rem, 3vw, 1.5rem);
+  margin: 1.5rem 0 0.5rem;
+  --size: clamp(84px, 24vw, 132px);
+}
+
+.cups-sandbox {
+  gap: 0.25rem;
+  margin: 1.25rem 0 0.5rem;
+  --size: clamp(48px, 13vw, 64px);
+}
+
+.cups-mini {
+  display: inline-flex;
+  vertical-align: middle;
+  --size: 32px;
+}
+
+.cups-mini .cup-art {
+  padding: 4%;
+}
+
+/* The trick */
+
+.stage {
+  text-align: center;
+}
+
+.stage .caption {
+  min-height: 3.1em;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.stage .moves {
+  min-height: 1.55em;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The secret */
+
+.secret summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.secret summary::-webkit-details-marker {
+  display: none;
+}
+
+.secret summary h2 {
+  display: inline;
+}
+
+.secret summary::after {
+  content: "Show";
+  float: right;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.secret[open] summary::after {
+  content: "Hide";
+}
+
+.spoiler {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.compare {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.compare div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+}
+
+.compare dt {
+  width: 6rem;
+  color: var(--muted);
+}
+
+.compare dd {
+  margin: 0;
+}
+
+.even {
+  color: var(--even);
+}
+
+.odd {
+  color: var(--odd);
+}
+
+.move-kinds {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.move-kinds li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.move-kinds li > span:last-child {
+  margin-left: 0.5rem;
+  color: var(--muted);
+}
+
+/* Sandbox */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.slider {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: 0.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.slider input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.stats {
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.verdict {
+  margin-top: 0.25rem;
+  text-align: center;
+  font-weight: 600;
 }
