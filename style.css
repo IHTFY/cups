@@ -263,6 +263,27 @@ button.cup:hover {
 
 /* The secret */
 
+/* Spans the card's padding so the 300px box fits on 360px-wide phones. */
+.ad {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 1.5rem calc(-1 * clamp(1rem, 4vw, 1.75rem)) 0;
+  padding-bottom: 5rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.ad a {
+  color: inherit;
+}
+
+.ad-box {
+  width: 300px;
+  height: 250px;
+  min-height: 250px;
+}
+
 .secret summary {
   cursor: pointer;
   list-style: none;
