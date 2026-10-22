@@ -7,7 +7,13 @@ let shown;
 let online = true;
 
 const storage = new Map();
-globalThis.localStorage = { getItem: (k) => storage.get(k) ?? null };
+let storageReadable = true;
+globalThis.localStorage = {
+  getItem: (k) => {
+    if (!storageReadable) throw new Error('blocked');
+    return storage.get(k) ?? null;
+  },
+};
 
 Object.defineProperty(globalThis, 'navigator', { get: () => ({ onLine: online }) });
 
@@ -49,6 +55,7 @@ beforeEach(() => {
   shown = [];
   online = true;
   storage.clear();
+  storageReadable = true;
   document.cookie = '';
   Object.assign(globalThis, {
     ihtfyAds: { show: (...args) => shown.push(args) },
@@ -118,6 +125,14 @@ test('loadForBuyer loads the loader at startup when localStorage holds a token',
 
 test('loadForBuyer loads the loader at startup when only the cookie holds a token', async () => {
   document.cookie = 'a=b; ihtfy-ad-free=token';
+  const { loadForBuyer } = await loadAds();
+  loadForBuyer();
+  assert.equal(added.length, 1);
+});
+
+test('loadForBuyer still finds the cookie when storage cannot be read', async () => {
+  storageReadable = false;
+  document.cookie = 'ihtfy-ad-free=token';
   const { loadForBuyer } = await loadAds();
   loadForBuyer();
   assert.equal(added.length, 1);
