@@ -212,6 +212,11 @@ function onPlayerMove() {
 trickButtons.yourTurn.addEventListener('click', setUpForPlayer);
 trickButtons.startOver.addEventListener('click', startPlaying);
 trickButtons.replay.addEventListener('click', runDemo);
+// One ad, the first time the secret is opened; reopening it asks for no new one.
+secret.addEventListener('toggle', () => {
+  if (!secret.open) return;
+  import('./ads.js').then(({ showAd }) => showAd(document.getElementById('adBox'), 'secret'));
+});
 trickButtons.secret.addEventListener('click', () => {
   secret.open = true;
   secret.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
