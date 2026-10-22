@@ -6,6 +6,9 @@ let added;
 let shown;
 let online = true;
 
+const storage = new Map();
+globalThis.localStorage = { getItem: (k) => storage.get(k) ?? null };
+
 Object.defineProperty(globalThis, 'navigator', { get: () => ({ onLine: online }) });
 
 // A minimal page: the module only creates script tags and adds them to `head`.
@@ -23,6 +26,7 @@ class FakeNode extends EventTarget {
 Object.assign(globalThis, {
   window: globalThis,
   document: {
+    cookie: '',
     createElement: () => new FakeNode(),
     head: { appendChild: (el) => added.push(el) },
   },
@@ -44,6 +48,8 @@ beforeEach(() => {
   body.clear();
   shown = [];
   online = true;
+  storage.clear();
+  document.cookie = '';
   Object.assign(globalThis, {
     ihtfyAds: { show: (...args) => shown.push(args) },
   });
@@ -92,4 +98,27 @@ test('a box removed before the loader arrives gets no ad, so its replacement can
   added[0].dispatchEvent(new Event('load'));
   await tick();
   assert.deepEqual(shown, [[b, 'same']]);
+});
+
+test('loadForBuyer loads nothing for a visitor without an ad-free token', async () => {
+  const { loadForBuyer } = await loadAds();
+  loadForBuyer();
+  assert.equal(added.length, 0);
+});
+
+test('loadForBuyer loads the loader at startup when localStorage holds a token', async () => {
+  storage.set('ihtfy-ad-free', 'token');
+  const { loadForBuyer, showAd } = await loadAds();
+  loadForBuyer();
+  assert.equal(added.length, 1);
+  assert.equal(added[0].src, 'https://ihtfy.com/ads/v1.js');
+  showAd(box(), 'a');
+  assert.equal(added.length, 1);
+});
+
+test('loadForBuyer loads the loader at startup when only the cookie holds a token', async () => {
+  document.cookie = 'a=b; ihtfy-ad-free=token';
+  const { loadForBuyer } = await loadAds();
+  loadForBuyer();
+  assert.equal(added.length, 1);
 });
