@@ -222,6 +222,9 @@ trickButtons.secret.addEventListener('click', () => {
   secret.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
 });
 
+// A returning ad-free buyer gets the loader now, so it hides the ad box before the secret opens.
+import('./ads.js').then(({ loadForBuyer }) => loadForBuyer());
+
 runDemo();
 
 // Sandbox: any number of cups, with the parity shown.
