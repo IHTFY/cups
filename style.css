@@ -261,6 +261,43 @@ button.cup:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* The ad beside the trick. The page widens into three columns from the
+   smallest screen in PLAY_AD_SIZES (ads.js), keeping the middle one where the
+   page was, and the ad sits 150px past it. */
+
+@media (min-width: 1373px) and (min-height: 700px) {
+  body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44rem minmax(0, 1fr);
+    align-items: start;
+    max-width: none;
+  }
+
+  body > * {
+    grid-column: 2;
+  }
+
+  /* A grid item keeps its last card's margin, which would push the footer down. */
+  main > :last-child {
+    margin-bottom: 0;
+  }
+
+  .rail:not([hidden]) {
+    display: grid;
+    grid-template-columns: min-content;
+    grid-column: 3;
+    grid-row: 2;
+    gap: 6px;
+    margin-left: 150px;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+}
+
+.rail a {
+  color: inherit;
+}
+
 /* The secret */
 
 /* Spans the card's padding so the 300px box fits on 360px-wide phones. */

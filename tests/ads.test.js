@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { setMaxListeners } from 'node:events';
 import { beforeEach, test } from 'node:test';
 
 // Script tags the module added, recorded instead of fetched.
@@ -17,10 +18,39 @@ globalThis.localStorage = {
 
 Object.defineProperty(globalThis, 'navigator', { get: () => ({ onLine: online }) });
 
+let now = 0;
+Object.defineProperty(globalThis, 'performance', { configurable: true, value: { now: () => now } });
+
+// The screen's size, as the rail's media queries see it.
+let screenSize = '300x600';
+const queries = new Map();
+globalThis.matchMedia = (query) => {
+  if (!queries.has(query)) {
+    const list = new EventTarget();
+    Object.defineProperty(list, 'matches', {
+      get: () => (query.includes('1653px') ? screenSize === '300x600' : screenSize !== null),
+    });
+    queries.set(query, list);
+  }
+  return queries.get(query);
+};
+const resize = (size) => {
+  screenSize = size;
+  for (const list of queries.values()) list.dispatchEvent(new Event('change'));
+};
+
+// The window's events: the rail waits for the player's first tap or key press.
+const events = new EventTarget();
+// Each fresh copy of the module adds its own listeners.
+setMaxListeners(Infinity, events);
+const press = () => events.dispatchEvent(new Event('keydown'));
+
 // A minimal page: the module only creates script tags and adds them to `head`.
 const body = new Set();
 class FakeNode extends EventTarget {
   removed = false;
+  style = {};
+  dataset = {};
   get isConnected() {
     return body.has(this);
   }
@@ -31,6 +61,7 @@ class FakeNode extends EventTarget {
 }
 Object.assign(globalThis, {
   window: globalThis,
+  addEventListener: events.addEventListener.bind(events),
   document: {
     cookie: '',
     createElement: () => new FakeNode(),
@@ -57,6 +88,9 @@ beforeEach(() => {
   storage.clear();
   storageReadable = true;
   document.cookie = '';
+  now = 0;
+  screenSize = '300x600';
+  queries.clear();
   Object.assign(globalThis, {
     ihtfyAds: { show: (...args) => shown.push(args) },
   });
@@ -136,4 +170,90 @@ test('loadForBuyer still finds the cookie when storage cannot be read', async ()
   const { loadForBuyer } = await loadAds();
   loadForBuyer();
   assert.equal(added.length, 1);
+});
+
+// The aside beside the trick, holding the boxes the rail adds.
+const rail = () => {
+  const el = { hidden: true, boxes: [] };
+  el.append = (child) => {
+    body.add(child);
+    el.boxes.push(child);
+  };
+  return el;
+};
+const current = (el) => el.boxes.filter((b) => b.isConnected);
+
+test('the rail gets a box of the screen size, and loads nothing before the first tap or key press', async () => {
+  const { startRail, PLAY_AD_SLOT } = await loadAds();
+  const el = rail();
+  startRail(el);
+  assert.equal(el.hidden, false);
+  const [a] = current(el);
+  assert.deepEqual(a.style, { width: '300px', height: '600px' });
+  assert.deepEqual(a.dataset, { adSlot: PLAY_AD_SLOT, adSize: '300x600' });
+  await tick();
+  assert.equal(added.length, 0);
+  press();
+  await tick();
+  assert.equal(added.length, 1);
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  assert.deepEqual(shown, [[a, 'play/1']]);
+});
+
+test('a buyer or a narrow screen gets no rail box', async () => {
+  const { startRail } = await loadAds();
+  screenSize = null;
+  const narrow = rail();
+  startRail(narrow);
+  assert.equal(narrow.hidden, true);
+  assert.equal(narrow.boxes.length, 0);
+
+  screenSize = '300x600';
+  storage.set('ihtfy-ad-free', 'token');
+  const buyer = rail();
+  startRail(buyer);
+  assert.equal(buyer.hidden, true);
+  assert.equal(buyer.boxes.length, 0);
+});
+
+test('a game started within a minute of the last request keeps its ad; a later one gets a new box and key', async () => {
+  const { startRail } = await loadAds();
+  const el = rail();
+  const newGame = startRail(el);
+  press();
+  now = 5_000;
+  await tick();
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  now = 64_999;
+  newGame();
+  assert.equal(el.boxes.length, 1);
+  now = 65_000;
+  newGame();
+  await tick();
+  assert.equal(el.boxes.length, 2);
+  assert.deepEqual(current(el), [el.boxes[1]]);
+  assert.deepEqual(
+    shown.map(([, key]) => key),
+    ['play/1', 'play/2'],
+  );
+});
+
+test('a new size gets a new box and key at once, and a narrow screen hides the rail', async () => {
+  const { startRail } = await loadAds();
+  const el = rail();
+  startRail(el);
+  resize('160x600');
+  assert.deepEqual(current(el)[0].style, { width: '160px', height: '600px' });
+  resize(null);
+  assert.equal(el.hidden, true);
+  assert.equal(current(el).length, 0);
+  resize('160x600');
+  press();
+  await tick();
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  // Only the box still on the page asks for an ad.
+  assert.deepEqual(shown, [[current(el)[0], 'play/3']]);
 });
