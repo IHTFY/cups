@@ -187,6 +187,7 @@ async function setUpForPlayer() {
 }
 
 function startPlaying() {
+  newGameAd();
   playerMoves = 0;
   setMoves(0);
   trick.set([DOWN, UP, DOWN]);
@@ -223,7 +224,12 @@ trickButtons.secret.addEventListener('click', () => {
 });
 
 // A returning ad-free buyer gets the loader now, so it hides the ad box before the secret opens.
-import('./ads.js').then(({ loadForBuyer }) => loadForBuyer());
+// Everyone else gets the ad beside the trick on a wide screen.
+let newGameAd = () => {};
+import('./ads.js').then(({ loadForBuyer, startRail }) => {
+  loadForBuyer();
+  newGameAd = startRail(document.getElementById('rail'));
+});
 
 runDemo();
 
