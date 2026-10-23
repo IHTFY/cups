@@ -7,9 +7,8 @@
 // (loadForBuyer), so it can hide the secret's ad box before the secret opens.
 const LOADER = 'https://ihtfy.com/ads/v1.js';
 
-// The unit beside the trick. It shares the secret's unit until a unit of its own
-// exists in AdSense.
-export const PLAY_AD_SLOT = '6470163205';
+// The games-play unit: 300×600 in AdSense; the 160×600 box uses it too.
+export const PLAY_AD_SLOT = '7239875855';
 
 // The size of the ad beside the trick, by screen, first match wins; style.css
 // widens the page from the smallest. The page's 704 px column stays centered,
