@@ -14,6 +14,7 @@ const countUp = (states) => states.filter((s) => s === UP).length;
 class CupRow {
   constructor(container, { interactive = true, onMove } = {}) {
     this.container = container;
+    container.replaceChildren();
     this.interactive = interactive;
     this.onMove = onMove;
     this.states = [];

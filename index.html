@@ -34,7 +34,8 @@
           Every move flips exactly <strong>two</strong> cups. The goal: turn all three cups
           <strong>mouth down</strong>.
         </p>
-        <div class="cups cups-stage" id="trickCups"></div>
+        <!-- The blank cups hold the row's space until script.js replaces them. -->
+        <div class="cups cups-stage" id="trickCups"><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span></div>
         <p class="caption" id="trickCaption" aria-live="polite"></p>
         <p class="moves" id="trickMoves"></p>
         <div class="actions">
@@ -126,7 +127,7 @@
             <button type="button" class="btn btn-primary" id="solveButton">Solve</button>
           </div>
         </div>
-        <div class="cups cups-sandbox" id="sandboxCups"></div>
+        <div class="cups cups-sandbox" id="sandboxCups"><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span><span class="cup" aria-hidden="true"></span></div>
         <p class="stats" id="sandboxStats"></p>
         <p class="verdict" id="sandboxVerdict" aria-live="polite"></p>
       </section>
