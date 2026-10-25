@@ -214,20 +214,52 @@ function onPlayerMove() {
 trickButtons.yourTurn.addEventListener('click', setUpForPlayer);
 trickButtons.startOver.addEventListener('click', startPlaying);
 trickButtons.replay.addEventListener('click', runDemo);
-// One ad, the first time the secret is opened; reopening it asks for no new one.
+// The ad is in the secret only while the secret is open and nobody is playing:
+// opening it makes a new box, closing it or touching the trick or the sandbox
+// removes the box. Ad code waits for the first tap or key press.
+const ads = import('./ads.js');
+let secretAd;
+// Bumped each time the ad should go, so an ask still waiting for ads.js is dropped.
+let secretAsk = 0;
+
+function removeSecretAd() {
+  secretAsk += 1;
+  secretAd?.remove();
+  secretAd = undefined;
+}
+
+// Whether the box, with the secret's top scrolled to the top of the window, ends inside it.
+const inView = (box) => box.getBoundingClientRect().bottom - secret.getBoundingClientRect().top <= innerHeight;
+
+function scrollToSecret() {
+  secret.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+}
+
 secret.addEventListener('toggle', () => {
+  removeSecretAd();
   if (!secret.open) return;
-  import('./ads.js').then(({ showAd }) => showAd(document.getElementById('adBox'), 'secret'));
+  scrollToSecret();
+  const ask = secretAsk;
+  ads.then(({ placeScreenAd }) => {
+    if (ask === secretAsk && secret.open) secretAd = placeScreenAd('secret', secret.querySelector('.compare'), inView);
+  });
 });
+for (const card of document.querySelectorAll('.stage, .sandbox')) {
+  for (const type of ['click', 'input']) {
+    card.addEventListener(type, (event) => {
+      if (event.target !== trickButtons.secret) removeSecretAd();
+    });
+  }
+}
 trickButtons.secret.addEventListener('click', () => {
   secret.open = true;
-  secret.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  scrollToSecret();
 });
 
-// A returning ad-free buyer gets the loader now, so it hides the ad box before the secret opens.
+// A returning ad-free buyer gets the loader now, so it can check and renew the token.
 // Everyone else gets the ad beside the trick on a wide screen.
 let newGameAd = () => {};
-import('./ads.js').then(({ loadForBuyer, startRail }) => {
+ads.then(({ loadForBuyer, startRail }) => {
   loadForBuyer();
   newGameAd = startRail(document.getElementById('rail'));
 });

@@ -300,25 +300,25 @@ button.cup:hover {
 
 /* The secret */
 
-/* Spans the card's padding so the 300px box fits on 360px-wide phones. */
+/* Spans the card's padding, its border, and the page's gutter, so a 320px box
+   fits a 320px-wide phone. The label and box come first, the Privacy link (or,
+   once the loader runs, its row with Remove ads) 54px under the box, and
+   nothing to tap sits within 50px of the box on any other side. */
 .ad {
   display: grid;
   justify-items: center;
   gap: 6px;
-  margin: 1.5rem calc(-1 * clamp(1rem, 4vw, 1.75rem)) 0;
-  padding-bottom: 5rem;
+  margin: 1.5rem calc(-1 * (clamp(1rem, 4vw, 1.75rem) + 1px + 1rem)) 0.5rem;
   color: var(--muted);
   font-size: 0.75rem;
 }
 
-.ad a {
-  color: inherit;
+.ad > :last-child {
+  margin-top: 48px;
 }
 
-.ad-box {
-  width: 300px;
-  height: 250px;
-  min-height: 250px;
+.ad a {
+  color: inherit;
 }
 
 .secret summary {

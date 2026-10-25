@@ -28,3 +28,17 @@ test('the stats and verdict lines reserve a line each', () => {
     assert.match(rule?.[1] ?? '', /min-height:/, selector);
   }
 });
+
+test('the page holds no ad box until the script adds one', () => {
+  assert.doesNotMatch(html, /data-ad-slot/);
+  assert.doesNotMatch(html, /class="ad"/);
+});
+
+test('every link to a shared ihtfy.com page ends in a slash', () => {
+  const links = [...html.matchAll(/href="(https:\/\/ihtfy\.com\/[^"]*)"/g)].map((m) => m[1]);
+  assert.deepEqual(links.sort(), [
+    'https://ihtfy.com/privacy/',
+    'https://ihtfy.com/privacy/',
+    'https://ihtfy.com/support/',
+  ]);
+});

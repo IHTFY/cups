@@ -1,11 +1,25 @@
-// The ads below the secret and beside the trick come from the shared IHTFY
+// The ads in the secret and beside the trick come from the shared IHTFY
 // loader, which ihtfy.com serves for all the games (its source is in the
-// IHTFY/com.ihtfy repo). Nothing ad-related loads until the secret is opened
-// or, on a screen wide enough for the ad beside the trick, until the first tap
+// IHTFY/com.ihtfy repo). Nothing ad-related loads until the player's first tap
 // or key press: the loader arrives then, and AdSense after it at browser idle.
-// A visitor who may have bought ad-free gets the loader at startup instead
-// (loadForBuyer), so it can hide the secret's ad box before the secret opens.
+// A visitor who may have bought ad-free gets no box at all, and the loader at
+// startup instead (loadForBuyer), so it can check and renew the token.
 const LOADER = 'https://ihtfy.com/ads/v1.js';
+
+// The shared 300×250 display unit for the games' result screens.
+export const SCREEN_AD_SLOT = '6470163205';
+
+// The sizes of the secret's box, tallest first. 320×50 is the last resort and
+// stays where nothing fits.
+export const AD_SIZES = [
+  { name: '300x250', width: 300, height: 250 },
+  { name: '320x100', width: 320, height: 100 },
+  { name: '320x50', width: 320, height: 50 },
+];
+
+// The screens where nobody is playing and the ad may go: the secret, once the
+// trick is over. The trick and the sandbox are play and never get one.
+export const showsAd = (screen) => screen === 'secret';
 
 // The games-play unit: 300×600 in AdSense; the 160×600 box uses it too.
 export const PLAY_AD_SLOT = '7239875855';
@@ -66,13 +80,66 @@ export function showAd(box, key) {
   );
 }
 
-// The player's first tap or key press. The ad beside the trick waits for it,
-// so nothing ad-related loads with the page.
+// The player's first tap or key press. The ads wait for it, so nothing
+// ad-related loads with the page.
 const firstInput = new Promise((resolve) => {
   for (const type of ['pointerdown', 'keydown']) {
     addEventListener(type, resolve, { once: true, capture: true });
   }
 });
+
+// Builds the box's aside: the label, a box of `size` that keeps its size
+// whether or not an ad fills it, and the Privacy link at least 50px below it.
+function buildAd(size) {
+  const aside = document.createElement('aside');
+  aside.className = 'ad';
+  const label = document.createElement('small');
+  label.textContent = 'Advertisements';
+  const box = document.createElement('div');
+  box.className = 'ad-box';
+  box.style.width = `${size.width}px`;
+  box.style.height = `${size.height}px`;
+  box.style.minHeight = `${size.height}px`;
+  box.style.maxHeight = `${size.height}px`;
+  box.dataset.adSlot = SCREEN_AD_SLOT;
+  box.dataset.adSize = size.name;
+  const privacy = document.createElement('a');
+  privacy.href = 'https://ihtfy.com/privacy/';
+  privacy.target = '_blank';
+  privacy.rel = 'noopener';
+  privacy.textContent = 'Privacy';
+  aside.append(label, box, privacy);
+  return { aside, box };
+}
+
+// One request a minute at most: a player can open and close the secret in seconds.
+const SCREEN_AD_INTERVAL = 60_000;
+let screenAds = 0;
+let screenAdAt = -Infinity;
+
+// Puts the ad for `screen` after `anchor`, in a new box for each call: the
+// tallest size `fits` accepts, else the smallest. Boxes `fits` rejects leave
+// before anything is painted or requested. Returns the aside to remove when
+// the screen goes, or nothing where the screen gets no ad: play, a visitor who
+// may have bought ad-free, or a second ask within a minute.
+export function placeScreenAd(screen, anchor, fits) {
+  if (!showsAd(screen) || mayBeAdFree()) return;
+  if (performance.now() - screenAdAt < SCREEN_AD_INTERVAL) return;
+
+  let placed;
+  for (const size of AD_SIZES) {
+    placed?.aside.remove();
+    placed = buildAd(size);
+    anchor.after(placed.aside);
+    if (fits(placed.box)) break;
+  }
+  const { aside, box } = placed;
+  screenAdAt = performance.now();
+  screenAds += 1;
+  const key = `${screen}/${screenAds}`;
+  firstInput.then(() => box.isConnected && showAd(box, key));
+  return aside;
+}
 
 // The ad beside the trick changes when the player starts a game, but at most
 // once a minute, since a game takes seconds. Its keys start with `play/`, apart
