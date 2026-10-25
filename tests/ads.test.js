@@ -51,8 +51,21 @@ class FakeNode extends EventTarget {
   removed = false;
   style = {};
   dataset = {};
+  children = [];
+  parent = null;
+  constructor(tag) {
+    super();
+    this.tag = tag;
+  }
   get isConnected() {
-    return body.has(this);
+    return body.has(this) || Boolean(this.parent?.isConnected);
+  }
+  append(...nodes) {
+    for (const node of nodes) node.parent = this;
+    this.children.push(...nodes);
+  }
+  after(node) {
+    body.add(node);
   }
   remove() {
     this.removed = true;
@@ -64,7 +77,7 @@ Object.assign(globalThis, {
   addEventListener: events.addEventListener.bind(events),
   document: {
     cookie: '',
-    createElement: () => new FakeNode(),
+    createElement: (tag) => new FakeNode(tag),
     head: { appendChild: (el) => added.push(el) },
   },
 });
@@ -256,4 +269,124 @@ test('a new size gets a new box and key at once, and a narrow screen hides the r
   await tick();
   // Only the box still on the page asks for an ad.
   assert.deepEqual(shown, [[current(el)[0], 'play/3']]);
+});
+
+test('only the secret gets a box; the trick, the sandbox, and anything else never do', async () => {
+  const { showsAd } = await loadAds();
+  assert.equal(showsAd('secret'), true);
+  for (const screen of ['trick', 'sandbox', 'play', 'home', undefined]) {
+    assert.equal(showsAd(screen), false, String(screen));
+  }
+});
+
+// The page's compare table, which the secret's ad goes after, and a window that fits the given sizes.
+const anchor = () => new FakeNode('dl');
+const fitting =
+  (...names) =>
+  (box) =>
+    names.includes(box.dataset.adSize);
+const boxOf = (aside) => aside.children.find((child) => child.dataset.adSlot);
+
+test('the secret gets one labeled box after the anchor, with the Privacy link under it', async () => {
+  const { placeScreenAd, SCREEN_AD_SLOT } = await loadAds();
+  const aside = placeScreenAd('secret', anchor(), fitting('300x250'));
+  assert.equal(aside.isConnected, true);
+  assert.deepEqual(
+    aside.children.map((child) => child.tag),
+    ['small', 'div', 'a'],
+  );
+  assert.equal(aside.children[0].textContent, 'Advertisements');
+  assert.equal(aside.children[2].href, 'https://ihtfy.com/privacy/');
+  const box = boxOf(aside);
+  assert.deepEqual(box.dataset, { adSlot: SCREEN_AD_SLOT, adSize: '300x250' });
+  assert.equal(SCREEN_AD_SLOT, '6470163205');
+  assert.deepEqual(box.style, { width: '300px', height: '250px', minHeight: '250px', maxHeight: '250px' });
+});
+
+test('the box is the tallest size that fits: 300x250, then 320x100, then 320x50, which stays where nothing fits', async () => {
+  const { placeScreenAd } = await loadAds();
+  const sizeOf = (aside) => boxOf(aside).dataset.adSize;
+  assert.equal(sizeOf(placeScreenAd('secret', anchor(), fitting('300x250', '320x100', '320x50'))), '300x250');
+  now = 60_000;
+  assert.equal(sizeOf(placeScreenAd('secret', anchor(), fitting('320x100', '320x50'))), '320x100');
+  now = 120_000;
+  assert.equal(sizeOf(placeScreenAd('secret', anchor(), fitting('320x50'))), '320x50');
+  now = 180_000;
+  const none = placeScreenAd('secret', anchor(), fitting());
+  assert.equal(sizeOf(none), '320x50');
+  assert.deepEqual(boxOf(none).style, { width: '320px', height: '50px', minHeight: '50px', maxHeight: '50px' });
+});
+
+test('boxes that did not fit leave the page unpainted, so only one box is ever there', async () => {
+  const { placeScreenAd } = await loadAds();
+  const sizes = [];
+  const aside = placeScreenAd('secret', anchor(), (box) => {
+    sizes.push(box.dataset.adSize);
+    return box.dataset.adSize === '320x50';
+  });
+  assert.deepEqual(sizes, ['300x250', '320x100', '320x50']);
+  assert.equal([...body].filter((node) => node.tag === 'aside').length, 1);
+  assert.equal(aside.isConnected, true);
+});
+
+test('the play screens never get a box', async () => {
+  const { placeScreenAd } = await loadAds();
+  for (const screen of ['trick', 'sandbox', 'play']) {
+    assert.equal(placeScreenAd(screen, anchor(), fitting('300x250')), undefined, screen);
+  }
+  assert.equal(body.size, 0);
+});
+
+test('a buyer gets no box and no reserved space, whether the token is in storage or only in the cookie', async () => {
+  const { placeScreenAd } = await loadAds();
+  storage.set('ihtfy-ad-free', 'token');
+  assert.equal(placeScreenAd('secret', anchor(), fitting('300x250')), undefined);
+  storage.clear();
+  document.cookie = 'ihtfy-ad-free=token';
+  assert.equal(placeScreenAd('secret', anchor(), fitting('300x250')), undefined);
+  press();
+  await tick();
+  assert.equal(body.size, 0);
+  assert.equal(added.length, 0);
+});
+
+test('the secret loads nothing before the first tap or key press, then asks for its ad once', async () => {
+  const { placeScreenAd } = await loadAds();
+  const aside = placeScreenAd('secret', anchor(), fitting('300x250'));
+  await tick();
+  assert.equal(added.length, 0);
+  press();
+  await tick();
+  assert.equal(added.length, 1);
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  assert.deepEqual(shown, [[boxOf(aside), 'secret/1']]);
+});
+
+test('a secret closed before the first input asks for nothing', async () => {
+  const { placeScreenAd } = await loadAds();
+  placeScreenAd('secret', anchor(), fitting('300x250')).remove();
+  press();
+  await tick();
+  assert.equal(added.length, 0);
+});
+
+test('reopening the secret makes a new box and key, but not within a minute of the last ask', async () => {
+  const { placeScreenAd } = await loadAds();
+  press();
+  const first = placeScreenAd('secret', anchor(), fitting('300x250'));
+  await tick();
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  first.remove();
+  now = 59_999;
+  assert.equal(placeScreenAd('secret', anchor(), fitting('300x250')), undefined);
+  now = 60_000;
+  const second = placeScreenAd('secret', anchor(), fitting('300x250'));
+  await tick();
+  assert.notEqual(second, first);
+  assert.deepEqual(
+    shown.map(([, key]) => key),
+    ['secret/1', 'secret/2'],
+  );
 });
