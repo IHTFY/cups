@@ -40,6 +40,5 @@ test('every link to a shared ihtfy.com page ends in a slash', () => {
     'https://ihtfy.com/privacy/',
     'https://ihtfy.com/privacy/',
     'https://ihtfy.com/projects/',
-    'https://ihtfy.com/support/',
   ]);
 });
