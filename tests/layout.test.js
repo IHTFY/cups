@@ -39,6 +39,7 @@ test('every link to a shared ihtfy.com page ends in a slash', () => {
   assert.deepEqual(links.sort(), [
     'https://ihtfy.com/privacy/',
     'https://ihtfy.com/privacy/',
+    'https://ihtfy.com/projects/',
     'https://ihtfy.com/support/',
   ]);
 });
