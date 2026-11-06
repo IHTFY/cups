@@ -73,11 +73,6 @@ a {
   margin-bottom: 1.25rem;
 }
 
-.tagline {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-}
-
 .gh-link {
   flex: none;
   color: var(--text);
