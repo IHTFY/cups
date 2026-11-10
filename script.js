@@ -21,6 +21,8 @@ class CupRow {
     this.cups = [];
     this.selected = null;
     this.flipping = false;
+    // The flip a pair tap started, so Solve can wait for it.
+    this.running = Promise.resolve();
     // Bumped by set(), so a flip that started before it doesn't count as a move.
     this.generation = 0;
 
@@ -87,7 +89,8 @@ class CupRow {
     const pair = [this.selected, index];
     this.setSelected(index, true);
     this.selected = null;
-    if (await this.flip(pair, 120)) this.onMove?.(pair);
+    this.running = this.flip(pair, 120);
+    if (await this.running) this.onMove?.(pair);
   }
 
   // Lifts the cups at `indices`, then turns them over together. Resolves to
@@ -242,7 +245,7 @@ secret.addEventListener('toggle', () => {
   const ask = secretAsk;
   ads.then(({ placeScreenAd }) => {
     if (ask === secretAsk && secret.open) secretAd = placeScreenAd('secret', secret.querySelector('.compare'), inView);
-  });
+  }, () => {});
 });
 for (const card of document.querySelectorAll('.stage, .sandbox')) {
   for (const type of ['click', 'input']) {
@@ -262,7 +265,7 @@ let newGameAd = () => {};
 ads.then(({ loadForBuyer, startRail }) => {
   loadForBuyer();
   newGameAd = startRail(document.getElementById('rail'));
-});
+}, () => {});
 
 runDemo();
 
@@ -330,6 +333,7 @@ solveButton.addEventListener('click', async () => {
   sandboxCups.inert = true;
   cupSlider.disabled = shuffleButton.disabled = allUpButton.disabled = true;
   updateSandbox();
+  await sandbox.running;
 
   const ups = sandbox.states.flatMap((s, i) => (s === UP ? [i] : []));
   for (let i = 0; i < ups.length; i += 2) {
