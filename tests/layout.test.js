@@ -42,3 +42,33 @@ test('every link to a shared ihtfy.com page ends in a slash', () => {
     'https://ihtfy.com/projects/',
   ]);
 });
+
+// Evaluates the width-based CSS lengths the stage uses (px, rem, vw, clamp, min, max, calc).
+const lengthAt = (expression, viewport) =>
+  Function(
+    'clamp',
+    'min',
+    'max',
+    `return ${expression
+      .replace(/(-?[\d.]+)vw/g, (_, n) => `(${n}*${viewport}/100)`)
+      .replace(/(-?[\d.]+)rem/g, (_, n) => `(${n}*16)`)
+      .replace(/(-?[\d.]+)px/g, '$1')
+      .replace(/\bcalc/g, '')}`,
+  )(
+    (low, value, high) => Math.min(Math.max(low, value), high),
+    Math.min,
+    Math.max,
+  );
+
+test('the three trick cups stay in one row on a 280 to 320 px screen', () => {
+  const stage = css.match(/\n\.cups-stage\s*\{([^}]*)\}/)?.[1] ?? '';
+  const size = stage.match(/--size:\s*([^;]+);/)?.[1];
+  const gap = stage.match(/\n\s*gap:\s*([^;]+);/)?.[1];
+  assert.ok(size && gap, 'the stage sets --size and gap');
+  for (const viewport of [280, 300, 320]) {
+    // The page keeps 1rem on each side; the card around the row adds 1rem of padding and a 1 px border on each.
+    const room = viewport - 4 * 16 - 2;
+    const row = 3 * lengthAt(size, viewport) + 2 * lengthAt(gap, viewport);
+    assert.ok(row <= room, `${viewport} px: the row is ${row.toFixed(1)} px of ${room} px`);
+  }
+});
