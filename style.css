@@ -217,7 +217,8 @@ button.cup:hover {
 .cups-stage {
   gap: clamp(0.5rem, 3vw, 1.5rem);
   margin: 1.5rem 0 0.5rem;
-  --size: clamp(84px, 24vw, 132px);
+  /* The second term keeps three cups and their gaps inside a 280 px screen. */
+  --size: clamp(60px, min(24vw, 31vw - 22px), 132px);
 }
 
 .cups-sandbox {

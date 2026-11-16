@@ -151,10 +151,15 @@ let playerMoves = 0;
 let secretOffered = false;
 const trick = new CupRow(trickCups, { onMove: onPlayerMove });
 
+// Set when the button that had focus hides, so the first cup can take it.
+let trickFocusLost = false;
+
 function showTrickButtons(...names) {
+  const focused = Object.values(trickButtons).find((button) => button === document.activeElement);
   for (const [name, button] of Object.entries(trickButtons)) {
     button.hidden = !names.includes(name);
   }
+  if (focused?.hidden) trickFocusLost = true;
 }
 
 function setMoves(n) {
@@ -198,6 +203,8 @@ function startPlaying() {
   trickCups.inert = false;
   trickCaption.textContent = 'Your turn. Tap two cups to flip them.';
   showTrickButtons('startOver', 'replay', ...(secretOffered ? ['secret'] : []));
+  if (trickFocusLost && document.activeElement === document.body) trick.cups[0].focus();
+  trickFocusLost = false;
 }
 
 function onPlayerMove() {
