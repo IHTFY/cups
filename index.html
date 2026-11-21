@@ -13,6 +13,73 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <meta name="theme-color" content="#f8f4ee" />
     <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Installed-app launch: the first paint copies Chrome's launch screen (manifest background,
+         maskable icon at 128px, name near the bottom), then launchExit() animates out of it. */
+      #launch {
+        display: none;
+      }
+      .launching #launch {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        background: #f8f4ee;
+      }
+      #launch-icon {
+        width: 128px;
+        height: 128px;
+        padding: 25.6px;
+      }
+      #launch-name {
+        position: absolute;
+        inset: auto 0 56px;
+        font: 24px/1 Roboto, system-ui, sans-serif;
+        text-align: center;
+        color: rgb(0 0 0 / 0.87);
+      }
+    </style>
+    <script>
+      // Plays once per fresh launch of the installed app: never in a browser tab, on reload, or on return.
+      (() => {
+        const root = document.documentElement;
+        try {
+          const nav = performance.getEntriesByType('navigation')[0];
+          const app = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+          if (!app || nav?.type !== 'navigate' || sessionStorage.getItem('launched')) return;
+          sessionStorage.setItem('launched', '1');
+        } catch {
+          return;
+        }
+        root.classList.add('launching');
+        const end = () => {
+          clearTimeout(fallback);
+          root.classList.remove('launching');
+          document.getElementById('launch')?.remove();
+        };
+        // The game never stays hidden behind the copy if it fails to call launchExit.
+        const fallback = setTimeout(end, 4000);
+        // play(overlay) starts the game's exit and returns its Web Animations.
+        window.launchExit = (play) => {
+          clearTimeout(fallback);
+          const overlay = document.getElementById('launch');
+          let animations = [];
+          if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            try {
+              animations = play(overlay);
+            } catch {
+              animations = [];
+            }
+          }
+          if (!animations.length) {
+            animations = [overlay.animate({ opacity: [1, 0] }, { duration: 200, easing: 'ease-out', fill: 'forwards' })];
+          }
+          overlay.addEventListener('pointerdown', () => animations.forEach((a) => a.finish()), { once: true });
+          Promise.all(animations.map((a) => a.finished)).then(end, end);
+        };
+      })();
+    </script>
     <script defer src="script.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
@@ -21,6 +88,40 @@
     </script>
   </head>
   <body>
+    <div id="launch" aria-hidden="true">
+      <svg id="launch-icon" viewBox="0 0 512 512">
+        <path
+          fill="#ff6465"
+          d="M48.886,33.212l68.345,447.384c2.76,18.063,18.294,31.406,36.568,31.406h204.406c18.273,0,33.808-13.342,36.568-31.406l68.345-447.384H48.886z"
+        />
+        <polygon fill="#171d26" opacity="0.1" points="58.334,95.065 453.668,95.065 463.117,33.21 48.886,33.21" />
+        <path
+          fill="#f2e9dc"
+          d="M469.459,0H42.543C24.201,0,9.333,14.868,9.333,33.212s14.868,33.21,33.21,33.21h426.915c18.342,0,33.21-14.868,33.21-33.21S487.801,0,469.459,0z"
+        />
+        <g fill="#d2555a">
+          <path
+            d="M411.402,123.17H100.601c-5.16,0-9.34-4.181-9.34-9.34c0-5.16,4.181-9.34,9.34-9.34H411.4c5.16,0,9.34,4.181,9.34,9.34C420.741,118.989,416.56,123.17,411.402,123.17z"
+          />
+          <path
+            d="M387.177,164.784H124.825c-5.16,0-9.34-4.181-9.34-9.34c0-5.16,4.181-9.34,9.34-9.34h262.352c5.16,0,9.34,4.181,9.34,9.34C396.517,160.603,392.336,164.784,387.177,164.784z"
+          />
+          <path
+            d="M360.449,427.3H151.555c-5.16,0-9.34-4.181-9.34-9.34c0-5.16,4.181-9.34,9.34-9.34h208.893c5.16,0,9.34,4.181,9.34,9.34C369.789,423.119,365.607,427.3,360.449,427.3z"
+          />
+          <path
+            d="M344.165,468.913H167.836c-5.16,0-9.34-4.181-9.34-9.34s4.181-9.34,9.34-9.34h176.329c5.16,0,9.34,4.181,9.34,9.34S349.325,468.913,344.165,468.913z"
+          />
+        </g>
+        <path
+          class="shadow"
+          fill="#171d26"
+          opacity="0.2"
+          d="M191.953,480.596L128.682,66.422h-11.416c-18.342,0-33.21-14.868-33.21-33.21C84.055,14.868,98.923,0,117.265,0H42.543C24.201,0,9.333,14.868,9.333,33.21s14.868,33.21,33.21,33.21h11.416l63.272,414.174c2.76,18.063,18.294,31.406,36.568,31.406h74.722C210.247,512,194.712,498.658,191.953,480.596z"
+        />
+      </svg>
+      <span id="launch-name">Cups</span>
+    </div>
     <header class="site-header">
       <div>
         <h1>The Three Cups</h1>

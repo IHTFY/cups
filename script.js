@@ -366,3 +366,29 @@ solveButton.addEventListener('click', async () => {
 });
 
 resetSandbox(randomStates(Number(cupSlider.value)));
+
+// Installed-app launch: the cup from the launch screen turns mouth down and lands on the
+// trick row's middle cup, which starts mouth down, while the launch screen fades away.
+globalThis.launchExit?.((overlay) => {
+  const icon = document.getElementById('launch-icon');
+  const from = icon.getBoundingClientRect();
+  const target = trick.cups[1].querySelector('.cup-art').getBoundingClientRect();
+  // Both boxes are padded: the launch cup fills 60% of its box, a game cup 84% of its.
+  const scale = (target.width * 0.84) / (from.width * 0.6);
+  const dx = target.left + target.width / 2 - (from.left + from.width / 2);
+  const dy = target.top + target.height / 2 - (from.top + from.height / 2);
+  const easing = 'cubic-bezier(0.5, 0, 0.2, 1)';
+  return [
+    overlay.animate({ backgroundColor: ['#f8f4ee', 'rgb(248 244 238 / 0)'] }, { duration: 600, easing: 'ease-in', fill: 'forwards' }),
+    document.getElementById('launch-name').animate({ opacity: [1, 0] }, { duration: 150, fill: 'forwards' }),
+    icon.animate(
+      { transform: ['none', `translate(${dx}px, ${dy}px) scale(${scale}) rotate(180deg)`] },
+      { duration: 900, easing, fill: 'forwards' },
+    ),
+    // The shadow stays on the cup's left, swapping sides halfway, as in a game flip.
+    icon.querySelector('.shadow').animate(
+      [{ transform: 'none' }, { transform: 'none', offset: 0.5 }, { transform: 'translate(100%, 0) scale(-1, 1)', offset: 0.5 }, { transform: 'translate(100%, 0) scale(-1, 1)' }],
+      { duration: 900, fill: 'forwards' },
+    ),
+  ];
+});
