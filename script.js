@@ -98,26 +98,26 @@ class CupRow {
   async flip(indices, liftMs) {
     const generation = this.generation;
     this.flipping = true;
-    indices.forEach((i) => this.setSelected(i, true));
-    await wait(liftMs);
-    if (generation !== this.generation) {
-      this.flipping = false;
-      return false;
-    }
-    for (const i of indices) {
-      this.setSelected(i, false);
-      this.states[i] ^= 1;
-      this.render(i);
-      if (!reduceMotion) {
-        this.cups[i].firstElementChild.animate(
-          [{ translate: '0 0' }, { translate: '0 -18%' }, { translate: '0 0' }],
-          { duration: FLIP_MS, easing: 'ease-in-out' },
-        );
+    try {
+      indices.forEach((i) => this.setSelected(i, true));
+      await wait(liftMs);
+      if (generation !== this.generation) return false;
+      for (const i of indices) {
+        this.setSelected(i, false);
+        this.states[i] ^= 1;
+        this.render(i);
+        if (!reduceMotion) {
+          this.cups[i].firstElementChild.animate(
+            [{ translate: '0 0' }, { translate: '0 -18%' }, { translate: '0 0' }],
+            { duration: FLIP_MS, easing: 'ease-in-out' },
+          );
+        }
       }
+      await wait(FLIP_MS);
+      return generation === this.generation;
+    } finally {
+      this.flipping = false;
     }
-    await wait(FLIP_MS);
-    this.flipping = false;
-    return generation === this.generation;
   }
 }
 
@@ -340,19 +340,22 @@ solveButton.addEventListener('click', async () => {
   sandboxCups.inert = true;
   cupSlider.disabled = shuffleButton.disabled = allUpButton.disabled = true;
   updateSandbox();
-  await sandbox.running;
+  try {
+    // A pair tap that failed has already been reported; Solve only needs it to be over.
+    await sandbox.running.catch(() => {});
 
-  const ups = sandbox.states.flatMap((s, i) => (s === UP ? [i] : []));
-  for (let i = 0; i < ups.length; i += 2) {
-    await sandbox.flip([ups[i], ups[i + 1]], 250);
-    sandboxMoves += 1;
+    const ups = sandbox.states.flatMap((s, i) => (s === UP ? [i] : []));
+    for (let i = 0; i < ups.length; i += 2) {
+      await sandbox.flip([ups[i], ups[i + 1]], 250);
+      sandboxMoves += 1;
+      updateSandbox();
+    }
+  } finally {
+    solving = false;
+    sandboxCups.inert = false;
+    cupSlider.disabled = shuffleButton.disabled = allUpButton.disabled = false;
     updateSandbox();
   }
-
-  solving = false;
-  sandboxCups.inert = false;
-  cupSlider.disabled = shuffleButton.disabled = allUpButton.disabled = false;
-  updateSandbox();
 });
 
 resetSandbox(randomStates(Number(cupSlider.value)));
