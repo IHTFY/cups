@@ -43,15 +43,16 @@ test('every link to a shared ihtfy.com page ends in a slash', () => {
   ]);
 });
 
-// Evaluates the width-based CSS lengths the stage uses (px, rem, vw, clamp, min, max, calc).
-const lengthAt = (expression, viewport) =>
-  Function(
+// Evaluates the CSS lengths the stage uses (px, rem, vw, var, clamp, min, max, calc) for a viewport width and a root font size.
+const lengthAt = (expression, viewport, rem = 16) => {
+  const resolved = expression.replace(/var\((--[\w-]+)\)/g, (_, name) => `(${css.match(new RegExp(`${name}:\\s*([^;]+);`))[1]})`);
+  return Function(
     'clamp',
     'min',
     'max',
-    `return ${expression
+    `return ${resolved
       .replace(/(-?[\d.]+)vw/g, (_, n) => `(${n}*${viewport}/100)`)
-      .replace(/(-?[\d.]+)rem/g, (_, n) => `(${n}*16)`)
+      .replace(/(-?[\d.]+)rem/g, (_, n) => `(${n}*${rem})`)
       .replace(/(-?[\d.]+)px/g, '$1')
       .replace(/\bcalc/g, '')}`,
   )(
@@ -59,17 +60,33 @@ const lengthAt = (expression, viewport) =>
     Math.min,
     Math.max,
   );
+};
 
-test('the three trick cups stay in one row on a 280 to 320 px screen', () => {
+// Each case is a viewport width and the browser's default font size, both in px.
+const stageRow = (viewport, rem) => {
   const stage = css.match(/\n\.cups-stage\s*\{([^}]*)\}/)?.[1] ?? '';
   const size = stage.match(/--size:\s*([^;]+);/)?.[1];
   const gap = stage.match(/\n\s*gap:\s*([^;]+);/)?.[1];
   assert.ok(size && gap, 'the stage sets --size and gap');
+  // The page keeps 1rem on each side; the card around the row adds its padding and a 1 px border on each.
+  const room = viewport - 2 * rem - 2 * lengthAt('var(--card-pad)', viewport, rem) - 2;
+  const row = 3 * lengthAt(size, viewport, rem) + 2 * lengthAt(gap, viewport, rem);
+  return { room, row };
+};
+
+test('the three trick cups stay in one row on a 280 to 320 px screen', () => {
   for (const viewport of [280, 300, 320]) {
-    // The page keeps 1rem on each side; the card around the row adds 1rem of padding and a 1 px border on each.
-    const room = viewport - 4 * 16 - 2;
-    const row = 3 * lengthAt(size, viewport) + 2 * lengthAt(gap, viewport);
-    assert.ok(row <= room, `${viewport} px: the row is ${row.toFixed(1)} px of ${room} px`);
+    const { room, row } = stageRow(viewport, 16);
+    assert.ok(row <= room, `${viewport} px: the row is ${row.toFixed(1)} px of ${room.toFixed(1)} px`);
+  }
+});
+
+test('the three trick cups stay in one row on a phone with a larger browser font', () => {
+  for (const viewport of [360, 390, 412]) {
+    for (const rem of [16, 20, 24]) {
+      const { room, row } = stageRow(viewport, rem);
+      assert.ok(row <= room, `${viewport} px at ${rem} px: the row is ${row.toFixed(1)} px of ${room.toFixed(1)} px`);
+    }
   }
 });
 

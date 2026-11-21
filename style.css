@@ -4,11 +4,13 @@
   --text: #1f2430;
   --muted: #5b6372;
   --border: #e6ddd0;
-  --accent: #2f6fde;
-  --accent-soft: rgba(47, 111, 222, 0.14);
+  --accent: #2a66d0;
+  --accent-soft: rgba(42, 102, 208, 0.14);
   --even: #1f8a4c;
   --odd: #c2410c;
   --flip: 500ms;
+  --card-pad: clamp(1rem, 4vw, 1.75rem);
+  --stage-gap: clamp(0.5rem, 3vw, 1.5rem);
   color-scheme: light dark;
 }
 
@@ -95,7 +97,7 @@ a {
 
 .card {
   margin-bottom: 1.25rem;
-  padding: clamp(1rem, 4vw, 1.75rem);
+  padding: var(--card-pad);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
@@ -215,10 +217,12 @@ button.cup:hover {
 }
 
 .cups-stage {
-  gap: clamp(0.5rem, 3vw, 1.5rem);
+  gap: var(--stage-gap);
   margin: 1.5rem 0 0.5rem;
-  /* The second term keeps three cups and their gaps inside a 280 px screen. */
-  --size: clamp(60px, min(24vw, 31vw - 22px), 132px);
+  /* A third of the width left by the page's 1rem on each side, the card's padding
+     and 1 px borders, and the two gaps, less 17 px for a scrollbar. The paddings
+     grow with the browser's font size, so the cups shrink with it. */
+  --size: clamp(60px, calc((100vw - 2rem - 2 * var(--card-pad) - 2px - 2 * var(--stage-gap) - 17px) / 3), 132px);
 }
 
 .cups-sandbox {
@@ -304,7 +308,7 @@ button.cup:hover {
   display: grid;
   justify-items: center;
   gap: 6px;
-  margin: 1.5rem calc(-1 * (clamp(1rem, 4vw, 1.75rem) + 1px + 1rem)) 0.5rem;
+  margin: 1.5rem calc(-1 * (var(--card-pad) + 1px + 1rem)) 0.5rem;
   color: var(--muted);
   font-size: 0.75rem;
 }
