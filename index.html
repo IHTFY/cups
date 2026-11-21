@@ -64,6 +64,8 @@
         window.launchExit = (play) => {
           clearTimeout(fallback);
           const overlay = document.getElementById('launch');
+          // Too late: the fallback already removed the copy.
+          if (!overlay) return;
           let animations = [];
           if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
             try {
