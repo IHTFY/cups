@@ -6,6 +6,8 @@ import { beforeEach, test } from 'node:test';
 let added;
 let shown;
 let online = true;
+// The loader's purchase check: a promise the test settles with whether the token holds up.
+let purchaseCheck;
 
 const storage = new Map();
 let storageReadable = true;
@@ -103,9 +105,10 @@ beforeEach(() => {
   document.cookie = '';
   now = 0;
   screenSize = '300x600';
+  purchaseCheck = Promise.resolve(false);
   queries.clear();
   Object.assign(globalThis, {
-    ihtfyAds: { show: (...args) => shown.push(args) },
+    ihtfyAds: { show: (...args) => shown.push(args), adFree: () => purchaseCheck },
   });
 });
 
@@ -214,20 +217,79 @@ test('the rail gets a box of the screen size, and loads nothing before the first
   assert.deepEqual(shown, [[a, 'play/1']]);
 });
 
-test('a buyer or a narrow screen gets no rail box', async () => {
+test('a narrow screen gets no rail box', async () => {
   const { startRail } = await loadAds();
   screenSize = null;
   const narrow = rail();
   startRail(narrow);
   assert.equal(narrow.hidden, true);
   assert.equal(narrow.boxes.length, 0);
+});
 
-  screenSize = '300x600';
+test('the rail has no box while the purchase check is pending, and none once it confirms a buyer', async () => {
   storage.set('ihtfy-ad-free', 'token');
-  const buyer = rail();
-  startRail(buyer);
-  assert.equal(buyer.hidden, true);
-  assert.equal(buyer.boxes.length, 0);
+  const { startRail } = await loadAds();
+  let settle;
+  purchaseCheck = new Promise((resolve) => (settle = resolve));
+  const el = rail();
+  startRail(el);
+  assert.equal(el.hidden, true);
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  assert.equal(el.hidden, true);
+  assert.equal(el.boxes.length, 0);
+  settle(true);
+  await tick();
+  assert.equal(el.hidden, true);
+  assert.equal(el.boxes.length, 0);
+});
+
+test('the rail gets its box once the purchase check finds the token did not hold up', async () => {
+  storage.set('ihtfy-ad-free', 'expired');
+  const { startRail } = await loadAds();
+  let settle;
+  purchaseCheck = new Promise((resolve) => (settle = resolve));
+  const el = rail();
+  startRail(el);
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  assert.equal(el.boxes.length, 0);
+  settle(false);
+  await tick();
+  assert.equal(el.hidden, false);
+  assert.deepEqual(current(el)[0].style, { width: '300px', height: '600px' });
+});
+
+test('adsAllowed is yes at once without a token, and loads nothing', async () => {
+  const { adsAllowed } = await loadAds();
+  assert.equal(await adsAllowed(), true);
+  assert.equal(added.length, 0);
+});
+
+test('adsAllowed waits for the purchase check: no for a buyer, yes for a token that did not hold up', async () => {
+  storage.set('ihtfy-ad-free', 'token');
+  const { adsAllowed } = await loadAds();
+  let settle;
+  purchaseCheck = new Promise((resolve) => (settle = resolve));
+  let answer;
+  adsAllowed().then((ok) => (answer = ok));
+  added[0].dispatchEvent(new Event('load'));
+  await tick();
+  assert.equal(answer, undefined);
+  settle(true);
+  await tick();
+  assert.equal(answer, false);
+
+  purchaseCheck = Promise.resolve(false);
+  assert.equal(await adsAllowed(), true);
+});
+
+test('adsAllowed is no for a possible buyer when the loader cannot be reached', async () => {
+  document.cookie = 'ihtfy-ad-free=token';
+  const { adsAllowed } = await loadAds();
+  const answer = adsAllowed();
+  added[0].dispatchEvent(new Event('error'));
+  assert.equal(await answer, false);
 });
 
 test('a game started within a minute of the last request keeps its ad; a later one gets a new box and key', async () => {
@@ -303,7 +365,7 @@ test('the secret gets one labeled box after the anchor, with the Privacy link un
   assert.deepEqual(box.style, { width: '300px', height: '250px', minHeight: '250px', maxHeight: '250px' });
 });
 
-test('the box is the tallest size that fits: 300x250, then 320x100, then 320x50, which stays where nothing fits', async () => {
+test('the box is the tallest size that fits: 300x250, then 320x100, then 320x50', async () => {
   const { placeScreenAd } = await loadAds();
   const sizeOf = (aside) => boxOf(aside).dataset.adSize;
   assert.equal(sizeOf(placeScreenAd('secret', anchor(), fitting('300x250', '320x100', '320x50'))), '300x250');
@@ -311,10 +373,17 @@ test('the box is the tallest size that fits: 300x250, then 320x100, then 320x50,
   assert.equal(sizeOf(placeScreenAd('secret', anchor(), fitting('320x100', '320x50'))), '320x100');
   now = 120_000;
   assert.equal(sizeOf(placeScreenAd('secret', anchor(), fitting('320x50'))), '320x50');
-  now = 180_000;
-  const none = placeScreenAd('secret', anchor(), fitting());
-  assert.equal(sizeOf(none), '320x50');
-  assert.deepEqual(boxOf(none).style, { width: '320px', height: '50px', minHeight: '50px', maxHeight: '50px' });
+});
+
+test('where no size fits there is no box and no request, and the next opening may still ask', async () => {
+  const { placeScreenAd } = await loadAds();
+  press();
+  assert.equal(placeScreenAd('secret', anchor(), fitting()), undefined);
+  assert.equal(body.size, 0);
+  await tick();
+  assert.equal(added.length, 0);
+  const aside = placeScreenAd('secret', anchor(), fitting('320x50'));
+  assert.equal(boxOf(aside).dataset.adSize, '320x50');
 });
 
 test('boxes that did not fit leave the page unpainted, so only one box is ever there', async () => {
@@ -335,19 +404,6 @@ test('the play screens never get a box', async () => {
     assert.equal(placeScreenAd(screen, anchor(), fitting('300x250')), undefined, screen);
   }
   assert.equal(body.size, 0);
-});
-
-test('a buyer gets no box and no reserved space, whether the token is in storage or only in the cookie', async () => {
-  const { placeScreenAd } = await loadAds();
-  storage.set('ihtfy-ad-free', 'token');
-  assert.equal(placeScreenAd('secret', anchor(), fitting('300x250')), undefined);
-  storage.clear();
-  document.cookie = 'ihtfy-ad-free=token';
-  assert.equal(placeScreenAd('secret', anchor(), fitting('300x250')), undefined);
-  press();
-  await tick();
-  assert.equal(body.size, 0);
-  assert.equal(added.length, 0);
 });
 
 test('the secret loads nothing before the first tap or key press, then asks for its ad once', async () => {

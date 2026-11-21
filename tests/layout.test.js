@@ -72,3 +72,12 @@ test('the three trick cups stay in one row on a 280 to 320 px screen', () => {
     assert.ok(row <= room, `${viewport} px: the row is ${row.toFixed(1)} px of ${room} px`);
   }
 });
+
+test('the rail needs a viewport tall enough for its 600 px ad, which ends 736 px down the page', () => {
+  const adsSource = read('ads.js');
+  const heights = [...adsSource.matchAll(/min-height: (\d+)px/g)].map((m) => Number(m[1]));
+  const cssHeight = Number(css.match(/@media \(min-width: 1373px\) and \(min-height: (\d+)px\)/)?.[1]);
+  assert.equal(heights.length, 2);
+  for (const height of [...heights, cssHeight]) assert.ok(height >= 736, `${height} px is too short`);
+  assert.deepEqual(new Set([...heights, cssHeight]).size, 1, 'ads.js and style.css use one height');
+});

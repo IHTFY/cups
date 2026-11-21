@@ -250,9 +250,16 @@ secret.addEventListener('toggle', () => {
   if (!secret.open) return;
   scrollToSecret();
   const ask = secretAsk;
-  ads.then(({ placeScreenAd }) => {
-    if (ask === secretAsk && secret.open) secretAd = placeScreenAd('secret', secret.querySelector('.compare'), inView);
+  ads.then(async ({ adsAllowed, placeScreenAd }) => {
+    if (!(await adsAllowed()) || ask !== secretAsk || !secret.open) return;
+    secretAd = placeScreenAd('secret', secret.querySelector('.compare'), inView);
   }, () => {});
+});
+// A turn of the phone can push the box below the first screen. It then goes, and
+// nothing replaces it: the loader fills a box once.
+matchMedia('(orientation: portrait)').addEventListener('change', () => {
+  const box = secretAd?.querySelector('.ad-box');
+  if (box && !inView(box)) removeSecretAd();
 });
 for (const card of document.querySelectorAll('.stage, .sandbox')) {
   for (const type of ['click', 'input']) {

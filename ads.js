@@ -2,15 +2,16 @@
 // loader, which ihtfy.com serves for all the games (its source is in the
 // IHTFY/com.ihtfy repo). Nothing ad-related loads until the player's first tap
 // or key press: the loader arrives then, and AdSense after it at browser idle.
-// A visitor who may have bought ad-free gets no box at all, and the loader at
-// startup instead (loadForBuyer), so it can check and renew the token.
+// A visitor who may have bought ad-free gets no box until the loader has
+// checked the token (adsAllowed), and gets the loader at startup instead
+// (loadForBuyer), so it can check and renew the token.
 const LOADER = 'https://ihtfy.com/ads/v1.js';
 
 // The shared 300×250 display unit for the games' result screens.
 export const SCREEN_AD_SLOT = '6470163205';
 
-// The sizes of the secret's box, tallest first. 320×50 is the last resort and
-// stays where nothing fits.
+// The sizes of the secret's box, tallest first. Where none fits, the secret
+// gets no ad.
 export const AD_SIZES = [
   { name: '300x250', width: 300, height: 250 },
   { name: '320x100', width: 320, height: 100 },
@@ -28,9 +29,12 @@ export const PLAY_AD_SLOT = '7239875855';
 // widens the page from the smallest. The page's 704 px column stays centered,
 // so each needs, on both sides of it, 150 px to the ad, the ad, and the body's
 // 16 px padding, plus 17 px for a scrollbar: 704 + 2 × (166 + width) + 17.
+// Both ads are 600 px tall and end 736 px down the page, below the heading, the
+// label and the links, so the height needs 760 px, a little to spare for a
+// larger font.
 export const PLAY_AD_SIZES = [
-  { query: '(min-width: 1653px) and (min-height: 700px)', size: '300x600' },
-  { query: '(min-width: 1373px) and (min-height: 700px)', size: '160x600' },
+  { query: '(min-width: 1653px) and (min-height: 760px)', size: '300x600' },
+  { query: '(min-width: 1373px) and (min-height: 760px)', size: '160x600' },
 ];
 
 let loader = null;
@@ -69,6 +73,17 @@ function mayBeAdFree() {
 export function loadForBuyer() {
   if (mayBeAdFree()) load().catch(() => {});
 }
+
+// Whether the games may place ads for this visitor. Without a token that is
+// yes at once. With one it waits for the loader's check: no for a buyer, yes
+// for a token that did not hold up. If the loader cannot be reached the answer
+// is no, so no space is reserved for a visitor who may be a buyer.
+export const adsAllowed = async () =>
+  !mayBeAdFree() ||
+  load().then(
+    async () => !(await window.ihtfyAds.adFree()),
+    () => false,
+  );
 
 // Fills `box` with an ad for the game over named `key`; offline or on failure it stays empty.
 export function showAd(box, key) {
@@ -118,21 +133,25 @@ let screenAds = 0;
 let screenAdAt = -Infinity;
 
 // Puts the ad for `screen` after `anchor`, in a new box for each call: the
-// tallest size `fits` accepts, else the smallest. Boxes `fits` rejects leave
-// before anything is painted or requested. Returns the aside to remove when
-// the screen goes, or nothing where the screen gets no ad: play, a visitor who
-// may have bought ad-free, or a second ask within a minute.
+// tallest size `fits` accepts. Boxes `fits` rejects leave before anything is
+// painted or requested. Returns the aside to remove when the screen goes, or
+// nothing where the screen gets no ad: play, a second ask within a minute, or
+// no size fits. The caller has checked adsAllowed.
 export function placeScreenAd(screen, anchor, fits) {
-  if (!showsAd(screen) || mayBeAdFree()) return;
+  if (!showsAd(screen)) return;
   if (performance.now() - screenAdAt < SCREEN_AD_INTERVAL) return;
 
   let placed;
   for (const size of AD_SIZES) {
-    placed?.aside.remove();
-    placed = buildAd(size);
-    anchor.after(placed.aside);
-    if (fits(placed.box)) break;
+    const next = buildAd(size);
+    anchor.after(next.aside);
+    if (fits(next.box)) {
+      placed = next;
+      break;
+    }
+    next.aside.remove();
   }
+  if (!placed) return;
   const { aside, box } = placed;
   screenAdAt = performance.now();
   screenAds += 1;
@@ -150,13 +169,14 @@ let requestedAt = -Infinity;
 // Shows the ad beside the trick in `rail` while the screen fits one, in a new
 // box for each new key. Returns what to call when the player starts a game.
 export function startRail(rail) {
-  if (mayBeAdFree()) return () => {};
+  // The rail stays hidden until the purchase check says this visitor is no buyer.
+  let allowed = !mayBeAdFree();
   const queries = PLAY_AD_SIZES.map((p) => matchMedia(p.query));
   let size;
   let box;
 
   const update = (newGame) => {
-    const next = PLAY_AD_SIZES.find((_, i) => queries[i].matches)?.size;
+    const next = allowed ? PLAY_AD_SIZES.find((_, i) => queries[i].matches)?.size : undefined;
     const due = newGame && performance.now() - requestedAt >= 60_000;
     if (next === size && !due) return;
     size = next;
@@ -184,5 +204,11 @@ export function startRail(rail) {
 
   for (const query of queries) query.addEventListener('change', () => update(false));
   update(false);
+  if (!allowed) {
+    adsAllowed().then((ok) => {
+      allowed = ok;
+      update(false);
+    });
+  }
   return () => update(true);
 }
