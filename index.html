@@ -9,8 +9,16 @@
       content="Flip two cups at a time and turn them all upside down. Watch it done, try it yourself, then learn why parity makes it impossible."
     />
     <link rel="icon" href="cup.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#f8f4ee" />
     <link rel="stylesheet" href="style.css" />
     <script defer src="script.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+      }
+    </script>
   </head>
   <body>
     <header class="site-header">
