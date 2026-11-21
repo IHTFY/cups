@@ -261,7 +261,7 @@ button.cup:hover {
    smallest screen in PLAY_AD_SIZES (ads.js), keeping the middle one where the
    page was, and the ad sits 150px past it. */
 
-@media (min-width: 1373px) and (min-height: 700px) {
+@media (min-width: 1373px) and (min-height: 760px) {
   body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 44rem minmax(0, 1fr);
