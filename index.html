@@ -53,20 +53,56 @@
           return;
         }
         root.classList.add('launching');
+        let animations = [];
+        let skipped = false;
+        let ended = false;
+        const skip = () => {
+          skipped = true;
+          animations.forEach((a) => a.finish());
+        };
+        // While the copy shows, a tap or key only skips it: nothing behind it reacts.
+        const swallow = (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          // A touch's click comes after the copy is gone, aimed at whatever is under the finger.
+          if (event.type === 'pointerdown' && event.isPrimary && event.button === 0) {
+            const spare = () => removeEventListener('click', eat, true);
+            addEventListener('click', eat, { capture: true, once: true });
+            addEventListener('pointercancel', spare, { once: true });
+            // A press the page loses (the copy went away) never clicks: the next real click must not be eaten.
+            addEventListener('pointerup', () => setTimeout(spare, 100), { once: true });
+            setTimeout(spare, 1000);
+          }
+          skip();
+        };
+        const eat = (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        };
         const end = () => {
+          ended = true;
           clearTimeout(fallback);
+          removeEventListener('pointerdown', swallow, true);
+          removeEventListener('keydown', swallow, true);
+          // Drops the fills too, so nothing stays changed if the fallback cuts the exit short.
+          animations.forEach((a) => a.cancel());
           root.classList.remove('launching');
           document.getElementById('launch')?.remove();
         };
-        // The game never stays hidden behind the copy if it fails to call launchExit.
-        const fallback = setTimeout(end, 4000);
+        addEventListener('pointerdown', swallow, true);
+        addEventListener('keydown', swallow, true);
+        // The game never stays hidden behind the copy if it fails to call launchExit or the exit fails.
+        let fallback = setTimeout(end, 4000);
         // play(overlay) starts the game's exit and returns its Web Animations.
         window.launchExit = (play) => {
-          clearTimeout(fallback);
           const overlay = document.getElementById('launch');
           // Too late: the fallback already removed the copy.
-          if (!overlay) return;
-          let animations = [];
+          if (ended || !overlay) return;
+          // A tap or key while the game was loading: show it at once.
+          if (skipped) return end();
+          // The exit gets its full run however late it starts, with a stall still caught.
+          clearTimeout(fallback);
+          fallback = setTimeout(end, 2000);
           if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
             try {
               animations = play(overlay);
@@ -77,7 +113,6 @@
           if (!animations.length) {
             animations = [overlay.animate({ opacity: [1, 0] }, { duration: 200, easing: 'ease-out', fill: 'forwards' })];
           }
-          overlay.addEventListener('pointerdown', () => animations.forEach((a) => a.finish()), { once: true });
           Promise.all(animations.map((a) => a.finished)).then(end, end);
         };
       })();
