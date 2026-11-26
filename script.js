@@ -380,7 +380,6 @@ globalThis.launchExit?.((overlay) => {
   const easing = 'cubic-bezier(0.5, 0, 0.2, 1)';
   return [
     overlay.animate({ backgroundColor: ['#f8f4ee', 'rgb(248 244 238 / 0)'] }, { duration: 600, easing: 'ease-in', fill: 'forwards' }),
-    document.getElementById('launch-name').animate({ opacity: [1, 0] }, { duration: 150, fill: 'forwards' }),
     icon.animate(
       { transform: ['none', `translate(${dx}px, ${dy}px) scale(${scale}) rotate(180deg)`] },
       { duration: 900, easing, fill: 'forwards' },
