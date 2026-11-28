@@ -53,6 +53,8 @@
           skipped = true;
           animations.forEach((a) => a.finish());
         };
+        // Drops the click guard of the last press; a new press replaces it.
+        let disarm = () => {};
         // While the copy shows, a tap or key only skips it: nothing behind it reacts.
         const swallow = (event) => {
           event.preventDefault();
@@ -62,6 +64,8 @@
             // A press the page loses (the copy went away) never clicks: the next press drops the guard, so a
             // real click is not eaten. The 1 s limit counts from the release, not the press, so a long hold
             // stays covered.
+            // The last press's timer must not later drop the guard this press arms.
+            disarm();
             let timer;
             const spare = () => {
               clearTimeout(timer);
@@ -77,6 +81,7 @@
             addEventListener('pointercancel', spare);
             addEventListener('pointerdown', spare, true);
             addEventListener('pointerup', lifted, true);
+            disarm = spare;
           }
           skip();
         };
